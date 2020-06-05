@@ -7,6 +7,9 @@ import numpy as np
 import os
 import mahotas as mt
 import matplotlib.pyplot as plt
+import numbers
+from scipy import stats
+import matplotlib.offsetbox as offsetbox
 
 
 
@@ -23,11 +26,10 @@ def multiple_img_features(path):
     
     """
     Input - A directory containing only all images
-    Output - A dictionary with 13 features
-        
+    Output - A dictionary with 13 features 
     """
 
-    files = os.listdir(str(path))
+    files = os.listdir(path)
 
     Angular_Second_Moment = []
     Contrast = []
@@ -64,7 +66,7 @@ def multiple_img_features(path):
                    "Contrast" : Contrast,
                    "Correlation" : Correlation,
                    "Sum of Squares: Variance" : Variance,
-                   "Inverse Difference Moment" : Inverse_Difference_Moment,
+                   "Homogeneity" : Inverse_Difference_Moment,
                    "Sum Average" : Sum_Average,
                    "Sum Variance" : Sum_Variance,
                    "Sum Entropy" : Sum_Entropy,
@@ -75,60 +77,97 @@ def multiple_img_features(path):
                    "Information Measure of Correlation 2" : Information_Measure_of_Correlation_2}
 
 
-def plot_box(real_dict,fake_dict):
-    
-    """
-    Input - Two dictionaries -- Real features , Fake features
-    Output - Two boxplots of fearure comparison 
-        
-    """
-    
-    
-    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(nrows=2, ncols=3,figsize=(14, 10))
+def qqplot(x, y, quantiles=None, interpolation='nearest', ax=None, rug=False,
+           rug_length=0.05, rug_kwargs=None, **kwargs):
+ 
+    # Get current axes if none are provided
+    if ax is None:
+        ax = plt.gca()
 
-    ax1.set_title('Contrast')
-    ax1.boxplot([real_dict['Contrast'],fake_dict['Contrast']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
-    
-    ax2.set_title('Angular Second Moment')
-    ax2.boxplot([real_dict['Angular Second Moment'],fake_dict['Angular Second Moment']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
-    
-    ax3.set_title('Correlation')
-    ax3.boxplot([real_dict['Correlation'],fake_dict['Correlation']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
-    
-    ax4.set_title('Variance')
-    ax4.boxplot([real_dict['Sum of Squares: Variance'],fake_dict['Sum of Squares: Variance']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
-    
-    ax5.set_title('Inverse Difference Moment')
-    ax5.boxplot([real_dict['Inverse Difference Moment'],fake_dict['Inverse Difference Moment']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
-    
-    ax6.set_title('Sum Average')
-    ax6.boxplot([real_dict['Sum Average'],fake_dict['Sum Average']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
-    
-    fig.savefig('Haralick_1-6_box_plot.png')
-    
-    fig2, ((ax7, ax8, ax9), (ax10, ax11, ax12)) = plt.subplots(nrows=2, ncols=3,figsize=(14, 10))
+    if quantiles is None:
+        quantiles = min(len(x), len(y))
 
-    ax7.set_title('Sum Variance')
-    ax7.boxplot([real_dict['Sum Variance'],fake_dict['Sum Variance']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
+    # Compute quantiles of the two samples
+    if isinstance(quantiles, numbers.Integral):
+        quantiles = np.linspace(start=0, stop=1, num=int(quantiles))
+    else:
+        quantiles = np.atleast_1d(np.sort(quantiles))
+    x_quantiles = np.quantile(x, quantiles, interpolation=interpolation)
+    y_quantiles = np.quantile(y, quantiles, interpolation=interpolation)
+
+    # Draw the rug plots if requested
+    if rug:
+        # Default rug plot settings
+        rug_x_params = dict(ymin=0, ymax=rug_length, c='gray', alpha=0.5)
+        rug_y_params = dict(xmin=0, xmax=rug_length, c='gray', alpha=0.5)
+
+        # Override default setting by any user-specified settings
+        if rug_kwargs is not None:
+            rug_x_params.update(rug_kwargs)
+            rug_y_params.update(rug_kwargs)
+
+        # Draw the rug plots
+        for point in x:
+            ax.axvline(point, **rug_x_params)
+        for point in y:
+            ax.axhline(point, **rug_y_params)
+
+    # Draw the q-q plot
+    ax.scatter(x_quantiles, y_quantiles, **kwargs)
+    lims = [
+    np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+    np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+    ]
+    ax.plot(lims, lims, 'k-', alpha=0.75, zorder=0)
+   
+
     
-    ax8.set_title('Sum Entropy')
-    ax8.boxplot([real_dict['Sum Entropy'],fake_dict['Sum Entropy']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
     
-    ax9.set_title('Entropy')
-    ax9.boxplot([real_dict['Entropy'],fake_dict['Entropy']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
+def QQandBox(real,fake,feature):
+    """ Q-Q plot and Boxplot next to each other for one feature with p-value"""
     
-    ax10.set_title('Difference Variance')
-    ax10.boxplot([real_dict['Difference Variance'],fake_dict['Difference Variance']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
+    p = stats.ks_2samp(real[feature], fake[feature])[1]
     
-    ax11.set_title('Difference Entropy')
-    ax11.boxplot([real_dict['Difference Entropy'],fake_dict['Difference Entropy']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
+    left = 0.2
+    bottom = 0.2
+    top = 0.8
+    right = 0.8
+    main_ax = plt.axes([left,bottom,right-left,top-bottom])
+    main_ax.set_xlabel('Real image data')
+    main_ax.set_ylabel('Generated image data')
+    main_ax.set_title(feature)
+    # create axes to the top and right of the main axes and hide them
+    right_ax = plt.axes([right,bottom,1-right,top-bottom])
     
-    ax12.set_title('Information Measure of Correlation 1')
-    ax12.boxplot([real_dict['Information Measure of Correlation 1'],fake_dict['Information Measure of Correlation 1']],positions=[1, 1.6,],labels=['Ground Truth','Generated'],showfliers=False)
+
+    qqplot(real[feature],fake[feature],ax = main_ax, c='r', alpha=0.5, edgecolor='k')
+    main_ax.spines['right'].set_visible(False)
+    main_ax.spines['top'].set_visible(False)
+    # Save the default tick positions, so we can reset them..
     
-    fig2.savefig('Haralick_7-12_box_plot.png')
+    right_ax.boxplot(real[feature], positions=[-0.2], widths=1, labels=['Real'],showfliers=False)
+    right_ax.boxplot(fake[feature], positions=[1.2], widths=1, labels=['Fake'],showfliers=False)
     
+    # set the limits to the box axes
+    right_ax.set_xlim(-1,2)
+    right_ax.spines['right'].set_visible(False)
+    right_ax.spines['top'].set_visible(False)
+    right_ax.spines['left'].set_visible(False)
+    right_ax.spines['bottom'].set_visible(False)
+    plt.setp(right_ax.get_yticklabels(), visible=False)
+    right_ax.tick_params(axis='both', which='both', length=0)
     
+    if p <0.0001:
+    
+        text = 'p = %e' %p
+    else:
+        text = 'p = %0.5f' %p
+    
+    ob = offsetbox.AnchoredText(text, loc=4,
+                    prop=dict(color='black', size=10))
+    ob.patch.set(boxstyle='round', color='white', alpha=0.5)
+    main_ax.add_artist(ob)
+    plt.savefig('%s_QQandBoxplots.png' %feature)
 
 
 

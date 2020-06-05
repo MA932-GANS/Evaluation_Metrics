@@ -6,6 +6,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
+import os
+from random import sample
 
 
 def fast_glcm(img, vmin=0, vmax=255, nbit=8, kernel_size=5):
@@ -144,10 +146,12 @@ def fast_glcm_entropy(img, vmin=0, vmax=255, nbit=8, ks=5):
     return ent
 
 
-# img_dest = "/home/eng/esuwws/RSG/Haralick/test/1_fake_B.png";
-# image = cv2.imread(img_dest)
-# img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-# h,w = img.shape
+img_dest = "/home/eng/esuwws/RSG/yeast_GAN/biogans/pytorch-fid/Fake_img/test_200/";
+files = os.listdir(img_dest)
+imgs = sample(files,1)[0]
+image = cv2.imread(img_dest + imgs)
+img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+h,w = img.shape
 
 mean = fast_glcm_mean(img)
 std = fast_glcm_std(img)
