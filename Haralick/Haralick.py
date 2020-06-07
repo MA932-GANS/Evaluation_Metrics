@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numbers
 from scipy import stats
 import matplotlib.offsetbox as offsetbox
+from tqdm import tqdm
 
 
 
@@ -45,7 +46,7 @@ def multiple_img_features(path):
     Information_Measure_of_Correlation_1 = []
     Information_Measure_of_Correlation_2 = []
 
-    for i in files:
+    for i in tqdm(files):
         image = cv2.imread(path + i)
         Haral = extract_features(image)
         Angular_Second_Moment.append(Haral[0])
