@@ -88,4 +88,4 @@ def get_inception_score(genrated_path,num_chan,x_dim,y_dim,splits=5):
     preds = get_inception_probs(images)
     mean, std = preds2score(preds, splits)
     print('Inception Score calculation time: %f s' % (time.time() - start_time))
-    return mean, std,images[0],images[1]  
+    return mean, std
