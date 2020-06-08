@@ -70,9 +70,9 @@ def preds2score(preds, splits=10):
         scores.append(np.exp(kl))
     return np.mean(scores), np.std(scores)
 
-def get_inception_score(genrated_path, splits=10):
+def get_inception_score(genrated_path,,num_chan,x_dim,y_dim,splits=5):
     files  = os.listdir(genrated_path)
-    images = np.empty((len(files),3,256,256))
+    images = np.empty((len(files),num_chan,x_dim,y_dim))
     count = 0
     for i in files:
         img = cv2.imread(genrated_path + i)
@@ -88,4 +88,4 @@ def get_inception_score(genrated_path, splits=10):
     preds = get_inception_probs(images)
     mean, std = preds2score(preds, splits)
     print('Inception Score calculation time: %f s' % (time.time() - start_time))
-    return mean, std,images[0]  
+    return mean, std,images[0],images[1]  
