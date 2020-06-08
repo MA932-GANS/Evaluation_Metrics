@@ -70,7 +70,7 @@ def preds2score(preds, splits=10):
         scores.append(np.exp(kl))
     return np.mean(scores), np.std(scores)
 
-def get_inception_score(genrated_path,,num_chan,x_dim,y_dim,splits=5):
+def get_inception_score(genrated_path,num_chan,x_dim,y_dim,splits=5):
     files  = os.listdir(genrated_path)
     images = np.empty((len(files),num_chan,x_dim,y_dim))
     count = 0
